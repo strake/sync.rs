@@ -85,6 +85,16 @@ impl<'a, T: ?Sized, Lock: raw::Lock> Drop for Guard<'a, T, Lock> {
     #[inline] fn drop(&mut self) { self.lock.unlock(false) }
 }
 
+impl<'a, T: ?Sized, Lock: raw::Lock> Guard<'a, T, Lock> {
+    #[inline]
+    pub fn try_upgrade(self) -> Result<GuardMut<'a, T, Lock>, Guard<'a, T, Lock>> {
+        if !self.lock.try_upgrade() { Err(self) } else { Ok(GuardMut {
+            lock: self.lock,
+            valu: unsafe { &mut *(self.valu as *const T as *mut T) },
+        }) }
+    }
+}
+
 /// Exclusive reference to guarded value
 pub struct GuardMut<'a, T: ?Sized + 'a, Lock: 'a + raw::Lock> {
     lock: &'a Lock,

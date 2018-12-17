@@ -20,6 +20,9 @@ unsafe impl super::Lock for Mutex {
 
     #[inline]
     fn try_lock(&self, _: bool) -> bool { !self.0.swap(true, Acquire) }
+
+    #[inline]
+    fn try_upgrade(&self) -> bool { true }
 }
 
 #[derive(Debug)]
@@ -79,5 +82,11 @@ unsafe impl super::Lock for RwLock {
             debug_assert_ne!(!USIZE_MSB, new);
             self.0.compare_exchange(old, new, SeqCst, Relaxed)
         }.is_ok()
+    }
+
+
+    #[inline]
+    fn try_upgrade(&self) -> bool {
+        self.0.compare_exchange_weak(1, USIZE_MSB, SeqCst, Relaxed).is_ok()
     }
 }
